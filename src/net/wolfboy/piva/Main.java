@@ -7,6 +7,8 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) throws PivaParsingErrorException {
 
+        // Hi
+
         while (true) {
             Scanner scanner = new Scanner(System.in);
             String code = scanner.nextLine();
