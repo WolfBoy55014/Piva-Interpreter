@@ -4,7 +4,7 @@ This is my second attempt to write a new language called _Piva_. The earlier com
 
 To give you (and me) an idea of how this language will look, here is some example code:
 
-``` java
+``` swift
 main main: // Initialized a main function w/ name 'main'
 
 x := 5;
