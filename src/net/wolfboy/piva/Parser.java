@@ -1,12 +1,16 @@
 package net.wolfboy.piva;
 
+import net.wolfboy.piva.ast.ASTNode;
+import net.wolfboy.piva.ast.BinaryOperationNode;
+import net.wolfboy.piva.ast.IntegerNode;
+import net.wolfboy.piva.ast.UnaryOperationNode;
 import net.wolfboy.piva.exception.PivaParsingErrorException;
 import net.wolfboy.piva.token.Token;
 import net.wolfboy.piva.token.TokenTypes;
 import org.jetbrains.annotations.NotNull;
 
 public class Parser  {
-    Lexer lexer;
+    final Lexer lexer;
     Token currentToken;
 
     // Parser Constructor
@@ -23,63 +27,88 @@ public class Parser  {
         }
     }
 
-    float parce() throws PivaParsingErrorException {
+    ASTNode parce() throws PivaParsingErrorException {
         return expr();
     }
 
-    float expr() throws PivaParsingErrorException {
-        float result = muldiv();
+    ASTNode expr() throws PivaParsingErrorException {
+        /*
+        expr   : muldiv ((ADD | SUBTRACT) muldiv)*
+        muldiv : expon ((MULTIPLY | DIVIDE) expon)*
+        expon  : paren (EXPONENT paren)*
+        paren  : (LPAREN expr RPAREN) | factor
+        factor : ((ADD | SUBTRACT) factor) | INTEGER
+         */
+
+
+        ASTNode node = muldiv();
         while (currentToken.type == TokenTypes.ADD | currentToken.type == TokenTypes.SUBTRACT) {
-            if (currentToken.type == TokenTypes.ADD) {
+            Token token = currentToken;
+            if (token.type == TokenTypes.ADD) {
                 eat(TokenTypes.ADD);
-                result = result + muldiv();
             } else {
                 eat(TokenTypes.SUBTRACT);
-                result = result - muldiv();
             }
+            node = new BinaryOperationNode(node, token.value, muldiv());
+
         }
-        return result;
+        return node;
     }
 
-    float muldiv() throws PivaParsingErrorException {
-        float result = expon();
+    ASTNode muldiv() throws PivaParsingErrorException {
+        ASTNode node = expon();
         while (currentToken.type == TokenTypes.MULTIPLY | currentToken.type == TokenTypes.DIVIDE) {
-            if (currentToken.type == TokenTypes.MULTIPLY) {
+            Token token = currentToken;
+            if (token.type == TokenTypes.MULTIPLY) {
                 eat(TokenTypes.MULTIPLY);
-                result = result * expon();
             } else {
                 eat(TokenTypes.DIVIDE);
-                result = result / expon();
             }
+            node = new BinaryOperationNode(node, token.value, expon());
         }
-        return result;
+        return node;
     }
 
-    float expon() throws PivaParsingErrorException {
-        float result = paren();
+    ASTNode expon() throws PivaParsingErrorException {
+        ASTNode node = paren();
         while (currentToken.type == TokenTypes.EXPONENT) {
             eat(TokenTypes.EXPONENT);
-            result = (float) Math.pow(result, paren());
+            node = new BinaryOperationNode(node, "^", paren());
         }
-        return result;
+        return node;
     }
 
-    float paren() throws PivaParsingErrorException {
-        float result = 0;
-        if (currentToken.type == TokenTypes.INTEGER) {
-            result = factor();
-        } else {
+    ASTNode paren() throws PivaParsingErrorException {
+        ASTNode node;
+        if (currentToken.type == TokenTypes.LPAREN) {
             eat(TokenTypes.LPAREN);
-            result = expr();
+            node = expr(); // Loop to hold entire expression in parentheses
             eat(TokenTypes.RPAREN);
+        } else {
+            node = factor();
         }
-        return result;
+        return node;
     }
 
-    int factor() throws PivaParsingErrorException {
+    ASTNode factor() throws PivaParsingErrorException {
         Token token = currentToken;
-        eat(TokenTypes.INTEGER);
-        return Integer.parseInt(token.value);
-    }
+        if (token.type == TokenTypes.ADD) {
 
+            eat(TokenTypes.ADD);
+            return new UnaryOperationNode("+", factor()); // Unary operation +8
+
+        } else if (token.type == TokenTypes.SUBTRACT) {
+
+            eat(TokenTypes.SUBTRACT);
+            return new UnaryOperationNode("-", factor()); // Unary operation -7
+
+        } else if (token.type == TokenTypes.INTEGER) {
+
+            eat(TokenTypes.INTEGER);
+            return new IntegerNode(token); // Normal, old integer
+
+        } else {
+            throw new PivaParsingErrorException("Incomplete or Incorrect Expression");
+        }
+    }
 }

@@ -7,7 +7,7 @@ import net.wolfboy.piva.token.TokenTypes;
 import java.util.Objects;
 
 public class Lexer {
-    String code;
+    final String code;
     int pos;
     String currentCharacter;
 
